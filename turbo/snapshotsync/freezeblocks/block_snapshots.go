@@ -1373,6 +1373,20 @@ func (br *BlockRetire) RetireBlocks(ctx context.Context, minBlockNum uint64, max
 		}
 	}
 
+	for br.chainConfig.IsOptimismPreBedrock(minBlockNum) {
+		var ok bool
+		minBlockNum = cmp.Max(br.blockReader.FrozenBlocks(), minBlockNum)
+		maxBlockNumOrPreBedrock := cmp.Min(maxBlockNum, br.chainConfig.BedrockBlock.Uint64())
+		maxBlockNum = br.maxScheduledBlock.Load()
+		ok, err = br.retirePreBedrockBlocks(ctx, minBlockNum, maxBlockNumOrPreBedrock, lvl, seedNewSnapshots, onDeleteSnapshots)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			break
+		}
+	}
+
 	for {
 		var ok, okBor bool
 
